@@ -1,17 +1,24 @@
 const db = require('../../data/db-config');
+const Accounts = require('./accounts-model')
 
 exports.checkAccountPayload = (req, res, next) => {
   // DO YOUR MAGIC
   // Note: you can either write "manual" validation logic
   // or use the Yup library (not currently installed)
-  if(req.body.name === undefined || req.body.budget === undefined){
-    next({ status: 400, message: 'name and budget are required' })    
-  } else if (req.body.name.trim().length < 3 || req.body.name.trim().length > 100){
-      next({ status: 400, message: 'name of account must be between 3 and 100' })
-  } else if (!parseInt(req.body.budget)){
-    next({ status: 400, message: 'budget of account must be a number' })
-  } else if (parseInt(req.body.budget) < 0 || parseInt(req.body.budget) > 1000000){
-    next({ status: 400, message: 'budget of account is too large or too small' })
+  const { name, budget } = req.body;
+  const error = { status: 400 }
+  if(name === undefined || budget === undefined){
+    error.message= 'name and budget are required'     
+  } else if (name.trim().length < 3 || name.trim().length > 100){
+    error.message= 'name of account must be between 3 and 100' 
+  } else if (!parseInt(budget)){
+    error.message= 'budget of account must be a number' 
+  } else if (parseInt(budget) < 0 || parseInt(budget) > 1000000){
+    // typeof budget !== 'number' || isNaN(budget)
+    error.message= 'budget of account is too large or too small' 
+  } 
+  if (error.message){
+    next(error)
   } else {
     next()
   }
@@ -20,7 +27,7 @@ exports.checkAccountPayload = (req, res, next) => {
 exports.checkAccountNameUnique = async (req, res, next) => {
   // DO YOUR MAGIC
   try {
-    const existing = await db('accounts').where('name', req.body.name).first()
+    const existing = await db('accounts').where('name', req.body.name.trim()).first()
     if(existing){
       next({ status: 400, message: 'that name is taken' })
     } else {
@@ -34,10 +41,15 @@ exports.checkAccountNameUnique = async (req, res, next) => {
 
 exports.checkAccountId = async (req, res, next) => {
   // DO YOUR MAGIC
-  const account = await db('accounts').where('id', req.params.id).first()
-  if (!account){
-    next({ status: 404, message: 'account not found'})
-  } else {
-    next()
+  try {
+    const account = await db('accounts').where('id', req.params.id).first()
+    if (!account){
+      next({ status: 404, message: 'account not found'})
+    } else {
+      req.account = account
+      next()
+    }
+  } catch (error) {
+    next(error)
   }
 }

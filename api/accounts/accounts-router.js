@@ -14,12 +14,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:id', checkAccountId, async (req, res, next) => {
   // DO YOUR MAGIC
-  try {
-    const account = await Accounts.getById(req.params.id)
-    res.json(account)
-  } catch (error) {
-    next(error)
-  }
+  res.json(req.account)
 })
 
 router.post('/', checkAccountPayload, checkAccountNameUnique, async (req, res, next) => {
